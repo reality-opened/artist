@@ -127,15 +127,19 @@ NAMED_CAMERA_SIZES = {
 
 
 def named_camera_frames(name, stop):
-    """Select AVFoundation hardware by its exact name, independent of OpenCV indices."""
+    """Select camera hardware by its exact name, independent of OpenCV indices."""
     import cv2
     import numpy as np
+    import sys
 
     if name not in NAMED_CAMERA_SIZES:
         raise ValueError(f"Choose one of: {', '.join(NAMED_CAMERA_SIZES)}.")
     command = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-nostdin",
-               "-f", "avfoundation", "-framerate", "30", "-video_size", NAMED_CAMERA_SIZES[name],
-               "-i", f"{name}:none", "-an", "-c:v", "mjpeg", "-q:v", "4",
+               *(["-f", "dshow", "-framerate", "30", "-video_size", NAMED_CAMERA_SIZES[name],
+                  "-i", f"video={name}"] if sys.platform == "win32" else
+                 ["-f", "avfoundation", "-framerate", "30", "-video_size", NAMED_CAMERA_SIZES[name],
+                  "-i", f"{name}:none"]),
+               "-an", "-c:v", "mjpeg", "-q:v", "4",
                "-f", "image2pipe", "pipe:1"]
     with tempfile.TemporaryFile() as errors:
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=errors)

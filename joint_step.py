@@ -6,6 +6,7 @@ Unselected motors are observed for unexpected movement. Not a grasp controller.
 """
 import argparse
 import json
+import os
 from pathlib import Path
 import time
 
@@ -16,7 +17,9 @@ from kinematics import JOINTS, Kinematics, ticks_to_radians
 from nudge import Servo
 
 
-CALIBRATION = Path("/Users/zhangbocheng/.cache/huggingface/lerobot/calibration/robots/so_follower/exp23_follower.json")
+# Regenerated 2026-09-24 from live EEPROM (limits 9/11, homing offset 31); the
+# original exp23_follower.json stayed on the old laptop.
+CALIBRATION = Path(os.environ.get("ARM_CALIBRATION", Path(__file__).parent / "calibration" / "so101_follower.json"))
 
 
 def make_plan(values, calibration, deltas, torque_limit):

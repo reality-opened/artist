@@ -197,7 +197,13 @@ def main():
             tmp = args.status + ".tmp"
             with open(tmp, "w") as f:
                 json.dump(status, f)
-            os.replace(tmp, args.status)
+            # Windows refuses the replace while a reader has status open; skip a cycle.
+            for _ in range(3):
+                try:
+                    os.replace(tmp, args.status)
+                    break
+                except PermissionError:
+                    time.sleep(0.01)
             time.sleep(0.05)
     except KeyboardInterrupt:
         release = True

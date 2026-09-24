@@ -21,7 +21,15 @@ STATE = D / "pen_state.json"
 
 
 def status():
-    return json.load(open(D / "status.json"))
+    # On Windows the open can briefly fail while teleop replaces the file.
+    for _ in range(20):
+        try:
+            with open(D / "status.json") as f:
+                return json.load(f)
+        except (PermissionError, json.JSONDecodeError):
+            time.sleep(0.01)
+    with open(D / "status.json") as f:
+        return json.load(f)
 
 
 def send(cmd):

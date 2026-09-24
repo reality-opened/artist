@@ -1,11 +1,12 @@
 """Read-only SO101 URDF forward kinematics for planning; no hardware access."""
+import os
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
 import numpy as np
 
 
-URDF = Path("/Users/zhangbocheng/code/projects/startups/platform/experiments/exp23_arm_refinement_loop/vendor/SO-ARM100/Simulation/SO101/so101_new_calib.urdf")
+URDF = Path(os.environ.get("ARM_URDF", Path(__file__).parent / "calibration" / "so101_new_calib.urdf"))
 JOINTS = ["shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll"]
 
 
