@@ -1,6 +1,6 @@
 #!/bin/zsh
 # Usage: cmd.sh '<json command>' [wait_seconds]; then prints status and saves both camera frames.
-C=/private/tmp/claude-501/-Users-zhangbocheng-code-projects-research-arm-harness/74ccf756-b267-448e-8051-a944b1ade232/scratchpad/ctl
+C=${ARM_CTL:-$(dirname $0)/ctl}
 [ -n "$1" ] && echo "$1" >> $C/cmds.jsonl
 sleep 0.3
 for i in $(seq 1 ${2:-80}); do

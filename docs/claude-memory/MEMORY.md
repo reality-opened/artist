@@ -1,0 +1,4 @@
+- [Visual teleop preference](visual-teleop-preference.md) — drive SO101 by camera + joint moves, not IK; never pause for people's hands (they react faster; monocular depth makes them look close)
+- [Whiteboard writing task](whiteboard-writing-task.md) — paused 2026-09-24: hello/claude in black + A\ logo in red; grip along jaws tip-out, pen.py, plan in docs/SESSION-20260924.md
+- [SO101 hardware quirks](so101-hardware-quirks.md) — shoulder stop ~2010, gripper overload EEPROM raised, garbled reads, every teleop command executes
+- [Verify grip orientation](verify-grip-orientation.md) — use enlarged Gemini crop before asking user to re-place an object; I misread the marker twice
