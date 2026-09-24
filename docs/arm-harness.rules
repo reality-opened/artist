@@ -1,0 +1,35 @@
+# Review and copy to ~/.codex/rules/arm-harness.rules, then restart Codex.
+# This file is only a proposed policy; its location here does not activate it.
+# Includes physical movement through nudge.py. Rules trust these scripts as edited;
+# their implementation, not the rule engine, enforces motion limits.
+# uv pip install and /usr/sbin/system_profiler are already in default.rules.
+prefix_rule(pattern=["uv", "sync"], decision="allow")
+prefix_rule(pattern=["uv", "lock"], decision="allow")
+prefix_rule(pattern=["uv", "venv"], decision="allow")
+prefix_rule(pattern=["uv", "python", "list"], decision="allow")
+prefix_rule(
+    pattern=["/Users/zhangbocheng/code/projects/research/arm-harness/.venv/bin/python",
+             "/Users/zhangbocheng/code/projects/research/arm-harness/nudge.py"],
+    decision="allow",
+    justification="Allow supervised robot bring-up commands, including bounded physical movement.",
+)
+prefix_rule(
+    pattern=["ffmpeg", "-hide_banner", "-loglevel", "error", "-n", "-i",
+             ["http://127.0.0.1:8765/stream.mjpg", "http://127.0.0.1:8766/stream.mjpg"]],
+    decision="allow",
+    justification="Record the local robot camera streams for motion verification.",
+)
+prefix_rule(pattern=["/usr/sbin/ioreg", "-p", "IOUSB"], decision="allow")
+prefix_rule(
+    pattern=["/Users/zhangbocheng/code/projects/research/arm-harness/.venv/bin/python",
+             "/Users/zhangbocheng/code/projects/research/arm-harness/camera_stream.py"],
+    decision="allow",
+    justification="Stream an explicitly selected robot camera on localhost.",
+)
+prefix_rule(
+    pattern=["/Users/zhangbocheng/code/projects/research/arm-harness/.venv/bin/python",
+             "/Users/zhangbocheng/code/projects/research/arm-harness/arm.py",
+             ["devices", "orbbec-list", "webcam", "motors"]],
+    decision="allow",
+    justification="Run this project's device inspection, camera capture, and motor telemetry commands.",
+)
