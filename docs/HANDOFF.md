@@ -83,24 +83,26 @@ or treat 5.3 V alone as a new blocker. Some earlier motion logs contain transien
 
 ## Camera operation and recovery
 
-| Camera | Exact AVFoundation name | Local view |
+| Camera | Source | Local view |
 | --- | --- | --- |
 | Wrist webcam | `USB Camera` | http://127.0.0.1:8765 |
-| Gemini RGB | `Orbbec Gemini 2 RGB Camera` | http://127.0.0.1:8766 |
+| Gemini color (SDK, 1280x720) | `--orbbec-rgbd`, needs sudo | http://127.0.0.1:8766 |
+| Gemini depth, aligned to color | same process | http://127.0.0.1:8767 |
 
-Both use FFmpeg/AVFoundation by exact name. OpenCV numeric indices changed order
+The wrist webcam uses FFmpeg/AVFoundation by exact name. OpenCV numeric indices changed order
 and sometimes selected FaceTime or OBS, so do not use numeric indices to verify
 robot operation. Native Orbbec SDK discovery succeeded, but capture encountered
-`uvc_open` error -3. **Depth, intrinsics and aligned RGB-D remain unverified.**
+`uvc_open` error -3 (libusb access denied: macOS's UVC driver owns the device).
+**Running the SDK as root fixes it** (verified 2026-09-26): `--orbbec-rgbd` serves
+color, a depth view, `:8767/depth.png` (uint16 mm, pixel-aligned to color) and
+`/intrinsics` (color fx/fy/cx/cy). Default depth format is RLE; the server requests Y16.
+Readings > ~5 m are outliers. The AVFoundation name route still works for RGB only
+when the Gemini enumerates as "RGB Camera"; it sometimes shows only IR or Depth.
 The HTTP UI was not verified through the in-app browser; snapshots and actual
 MJPEG video were verified directly.
 
-If no server is running, start each in a separate long-running process:
-
-```sh
-/Users/zhangbocheng/code/projects/research/arm-harness/.venv/bin/python /Users/zhangbocheng/code/projects/research/arm-harness/camera_stream.py --device-name 'Orbbec Gemini 2 RGB Camera' --port 8766
-/Users/zhangbocheng/code/projects/research/arm-harness/.venv/bin/python /Users/zhangbocheng/code/projects/research/arm-harness/camera_stream.py --device-name 'USB Camera' --port 8765
-```
+If no server is running: `./start_cameras.sh` (prompts for sudo; `./start_cameras.sh stop`
+to stop). Logs: `captures/wrist-server.log`, `captures/rgbd-server.log`.
 
 Last Codex process handles: Gemini `36027`, wrist `34990`. These are session
 handles, not OS PIDs, and may not survive a new agent/session. Check HTTP and

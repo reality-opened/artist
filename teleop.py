@@ -11,7 +11,8 @@ Commands:
   {"release": true}                torque off on every motor and exit
 Adopts motors that are already holding (goal = present position if torque is
 off). Faults hold position instead of releasing so the arm cannot drop; only
-overheating (>= 55 C) or an explicit release turns torque off.
+overheating (>= 55 C) or an explicit release turns torque off. A gripper (ID 6)
+overheat relaxes only the gripper; the next "gripper" command re-enables it below 50 C.
 """
 import argparse
 import json
@@ -134,6 +135,7 @@ def main():
     targets = dict(goals)
     speed = 10
     hot = {}
+    gripper_off = False
     log = open(args.status + ".log", "a")
     offset = os.path.getsize(args.commands) if os.path.exists(args.commands) else 0
     last_result = "started"
@@ -160,6 +162,13 @@ def main():
                             new[int(k)] = targets[int(k)] + int(v)
                         if "gripper" in c:
                             new[6] = int(c["gripper"])
+                            if gripper_off:
+                                if tolerant_read(servos[6], 63)[0] >= 50:
+                                    raise ValueError("gripper still hot after overheat; wait below 50 C")
+                                goals[6] = tolerant_read(servos[6], 56, 2)[0]
+                                tolerant_write(servos[6], 42, goals[6])
+                                tolerant_write(servos[6], 40, 1, size=1)
+                                gripper_off = False
                         extra = {}
                         if "xyz" in c:
                             ticks, xyz, axis = solve_ik(kin, calibration, [targets[i] for i in ARM_IDS],
@@ -187,8 +196,15 @@ def main():
                 # A single garbled read (e.g. 247 C) must not drop the arm: require
                 # three consecutive plausible over-temperature readings.
                 hot[i] = hot.get(i, 0) + 1 if 55 <= state[i]["temp"] <= 100 else 0
-                if hot[i] >= 3:
+                if hot[i] >= 3 and i == 6:
+                    # A stalled grip heats the gripper; relax only it so the arm keeps holding.
+                    if not gripper_off:
+                        tolerant_write(s, 40, 0, size=1)
+                        gripper_off = True
+                        log.write(json.dumps(dict(t=time.time(), event="gripper_overheat_released")) + "\n")
+                elif hot[i] >= 3:
                     raise RuntimeError(f"Overheat on {i}")
+                state[i]["torque_off"] = i == 6 and gripper_off
             q = ticks_to_radians([state[i]["pos"] for i in ARM_IDS], calibration)
             T = kin.fk(q)
             status = dict(t=time.time(), motors=state, model_xyz=T[:3, 3].round(4).tolist(),
