@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 
-from camera_stream import LatestFrame, handler_for, orbbec_bgr
+from camera_stream import LatestFrame, colorize_depth, handler_for, orbbec_bgr
 
 
 class StreamHTTPTests(unittest.TestCase):
@@ -89,6 +89,43 @@ class StreamTests(unittest.TestCase):
             frame.get_height.return_value = 1
             frame.get_format.return_value = fmt
             np.testing.assert_array_equal(orbbec_bgr(frame), [[[0, 0, 255]]])
+
+    def test_colorize_depth_near_red_far_blue_missing_black(self):
+        import numpy as np
+
+        view = colorize_depth(np.array([[0, 100, 1500]], dtype=np.uint16), 1500)
+        np.testing.assert_array_equal(view[0, 0], [0, 0, 0])
+        self.assertGreater(view[0, 1, 2], view[0, 1, 0])  # near: red (BGR) dominates
+        self.assertGreater(view[0, 2, 0], view[0, 2, 2])  # far: blue dominates
+
+
+class ExtrasHTTPTests(unittest.TestCase):
+    def test_extras_served_only_while_live(self):
+        import http.client
+        import threading
+        from http.server import ThreadingHTTPServer
+
+        latest = LatestFrame("test-depth")
+        server = ThreadingHTTPServer(("127.0.0.1", 0), handler_for(latest))
+        worker = threading.Thread(target=server.serve_forever, daemon=True)
+        worker.start()
+        connection = http.client.HTTPConnection(*server.server_address, timeout=3)
+        try:
+            latest.publish(b"jpeg", {"/depth.png": ("image/png", b"png-bytes")})
+            connection.request("GET", "/depth.png")
+            response = connection.getresponse()
+            self.assertEqual((response.status, response.getheader("Content-Type"), response.read()),
+                             (200, "image/png", b"png-bytes"))
+            latest.fail("Disconnected")
+            connection.request("GET", "/depth.png")
+            response = connection.getresponse()
+            self.assertEqual(response.status, 503)
+            response.read()
+        finally:
+            connection.close()
+            server.shutdown()
+            server.server_close()
+            worker.join(timeout=3)
 
 
 if __name__ == "__main__":
